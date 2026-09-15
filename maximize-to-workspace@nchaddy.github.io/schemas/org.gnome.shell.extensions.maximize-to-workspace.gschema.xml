@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.maximize-to-workspace"
+          path="/org/gnome/shell/extensions/maximize-to-workspace/">
+
+    <key name="home-workspace-index" type="i">
+      <default>0</default>
+      <range min="0" max="31"/>
+      <summary>Home workspace index</summary>
+      <description>
+        The reserved workspace, counted from zero. It never receives a fullscreen window,
+        and windows return here when they are minimized or un-maximized.
+      </description>
+    </key>
+
+    <key name="force-fullscreen" type="b">
+      <default>true</default>
+      <summary>Force fullscreen</summary>
+      <description>
+        Put the window into true fullscreen after moving it to its own workspace, hiding the
+        top bar. When disabled the window is left merely maximized on its own workspace.
+      </description>
+    </key>
+
+    <key name="return-on-minimize" type="b">
+      <default>true</default>
+      <summary>Return home on minimize</summary>
+      <description>
+        Move a managed window back to the home workspace when it is minimized, and follow it there.
+      </description>
+    </key>
+
+    <key name="return-on-unmaximize" type="b">
+      <default>true</default>
+      <summary>Return home on un-maximize</summary>
+      <description>
+        Move a managed window back to the home workspace when it is un-maximized or leaves
+        fullscreen, and follow it there.
+      </description>
+    </key>
+
+    <key name="startup-delay-ms" type="i">
+      <default>3000</default>
+      <range min="0" max="30000"/>
+      <summary>Startup delay in milliseconds</summary>
+      <description>
+        Grace period after the extension is enabled before any window is moved, so that windows
+        restored at login are not reshuffled.
+      </description>
+    </key>
+
+  </schema>
+</schemalist>

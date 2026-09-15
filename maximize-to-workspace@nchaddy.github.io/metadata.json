@@ -1,0 +1,9 @@
+{
+  "uuid": "maximize-to-workspace@nchaddy.github.io",
+  "name": "Maximize To Workspace",
+  "description": "Moves a maximized window onto its own workspace and forces it fullscreen, macOS-style. The first workspace stays reserved for ordinary windows; minimizing returns the window there.",
+  "shell-version": ["48", "49", "50"],
+  "settings-schema": "org.gnome.shell.extensions.maximize-to-workspace",
+  "url": "https://github.com/chaddy50/MaximizeToWorkspace",
+  "version": 1
+}
