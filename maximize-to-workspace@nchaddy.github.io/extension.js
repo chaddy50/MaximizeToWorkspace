@@ -4,9 +4,11 @@ import {Extension, InjectionManager} from 'resource:///org/gnome/shell/extension
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {
+    countManageableWindowsOnWorkspace,
     isManageableWindow,
     isWindowFullyMaximized,
     isWindowOnManagedMonitor,
+    shouldMoveNewWindowHome,
 } from './lib/windowFilter.js';
 import {resolveTargetWorkspace} from './lib/workspaceResolver.js';
 import {WindowStateTracker} from './lib/windowStateTracker.js';
@@ -45,6 +47,7 @@ export default class MaximizeToWorkspaceExtension extends Extension {
             'size-changed', (_windowManager, actor) => this._onSizeChanged(actor),
             'minimize', (_windowManager, actor) => this._onMinimize(actor),
             'destroy', (_windowManager, actor) => this._onDestroy(actor),
+            'map', (_windowManager, actor) => this._onMap(actor),
             this);
     }
 
@@ -148,6 +151,46 @@ export default class MaximizeToWorkspaceExtension extends Extension {
     }
 
     /**
+     * A window born already maximized or fullscreen (some apps restore that state on
+     * launch) never fires a size-change transition, so it gets the same treatment a live
+     * maximize gets, reusing that path unchanged. An ordinary new window is redirected to
+     * the home workspace instead, so it always opens where the user can see it.
+     */
+    _onMap(actor) {
+        const window = actor.meta_window;
+        if (!window)
+            return;
+
+        if (isWindowFullyMaximized(window) || window.is_fullscreen()) {
+            this._moveWindowToOwnWorkspace(window);
+            return;
+        }
+
+        this._moveNewWindowHome(window);
+    }
+
+    _moveNewWindowHome(window) {
+        if (!this._isStartupComplete)
+            return;
+        if (!this._settings.get_boolean('move-new-windows-home'))
+            return;
+
+        const homeWorkspaceIndex = this._settings.get_int('home-workspace-index');
+        if (!shouldMoveNewWindowHome(window, this._mutterSettings, homeWorkspaceIndex))
+            return;
+
+        const homeWorkspace = window.get_display().get_workspace_manager()
+            .get_workspace_by_index(homeWorkspaceIndex);
+        if (!homeWorkspace)
+            return;
+
+        this._tracker.runGuarded(window, () => {
+            window.change_workspace(homeWorkspace);
+            homeWorkspace.activate_with_focus(window, global.get_current_time());
+        });
+    }
+
+    /**
      * Wraps WorkspaceTracker._checkWorkspaces so the home workspace is marked "kept
      * alive" for the duration of each check, exempting it from the sweep that deletes
      * empty, inactive, non-trailing workspaces. Same technique the built-in Auto Move
@@ -202,13 +245,19 @@ export default class MaximizeToWorkspaceExtension extends Extension {
                 window.make_fullscreen();
 
             const workspaceManager = window.get_display().get_workspace_manager();
+            const currentWorkspace = window.get_workspace();
 
-            // A window maximized while already on its own workspace is fullscreened in
-            // place; without this it would walk further up the workspace list each time.
-            const isAlreadyOffHomeWorkspace =
-                window.get_workspace().index() !== homeWorkspaceIndex;
+            // A window already alone on its own, non-home workspace is fullscreened in
+            // place rather than moved again — otherwise a live re-maximize would walk it
+            // further up the workspace list each time. Home is never a valid "own
+            // workspace" though, and a workspace it shares with another window (e.g. a
+            // second app that opened fullscreen on whatever workspace was active) is not
+            // really its own either, so both still need a fresh target.
+            const hasUndisputedOwnWorkspace =
+                currentWorkspace.index() !== homeWorkspaceIndex &&
+                countManageableWindowsOnWorkspace(currentWorkspace, monitorIndex) <= 1;
 
-            if (!isAlreadyOffHomeWorkspace) {
+            if (!hasUndisputedOwnWorkspace) {
                 const targetWorkspace = resolveTargetWorkspace(
                     workspaceManager, homeWorkspaceIndex, monitorIndex, global.get_current_time());
 

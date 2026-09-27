@@ -17,6 +17,7 @@ const EXPECTED_KEYS = [
     {name: 'return-on-minimize', type: 'b', defaultValue: 'true'},
     {name: 'return-on-unmaximize', type: 'b', defaultValue: 'true'},
     {name: 'startup-delay-ms', type: 'i', defaultValue: '3000'},
+    {name: 'move-new-windows-home', type: 'b', defaultValue: 'true'},
 ];
 
 function findKeyBlock(name) {

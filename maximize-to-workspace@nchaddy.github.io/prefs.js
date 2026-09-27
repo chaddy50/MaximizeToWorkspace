@@ -16,6 +16,7 @@ export default class MaximizeToWorkspacePreferences extends ExtensionPreferences
         });
 
         page.add(this._buildBehaviorGroup(settings));
+        page.add(this._buildNewWindowsGroup(settings));
         page.add(this._buildAdvancedGroup(settings));
 
         window.add(page);
@@ -42,6 +43,19 @@ export default class MaximizeToWorkspacePreferences extends ExtensionPreferences
         return group;
     }
 
+    _buildNewWindowsGroup(settings) {
+        const group = new Adw.PreferencesGroup({
+            title: 'New windows',
+            description: 'What happens when a new application window opens.',
+        });
+
+        this._addSwitchRow(group, settings, 'move-new-windows-home',
+            'Move new windows home',
+            'Newly opened windows are moved to the home workspace and the view follows.');
+
+        return group;
+    }
+
     _buildAdvancedGroup(settings) {
         const group = new Adw.PreferencesGroup({
             title: 'Advanced',
@@ -50,7 +64,8 @@ export default class MaximizeToWorkspacePreferences extends ExtensionPreferences
 
         this._addSpinRow(group, settings, 'home-workspace-index',
             'Home workspace',
-            'Counted from zero, so 0 is the first workspace. Never receives a fullscreen window.',
+            'Counted from zero, so 0 is the first workspace. Never receives a fullscreen ' +
+            'window; new windows land here too.',
             0, 31, 1);
 
         this._addSpinRow(group, settings, 'startup-delay-ms',

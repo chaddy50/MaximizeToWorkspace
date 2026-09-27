@@ -6,6 +6,9 @@ Maximize a window and it moves onto a workspace of its own and goes fullscreen. 
 or un-maximize it, leave fullscreen, or close it — and it comes back to the home workspace,
 with the view following it.
 
+New windows always open on the home workspace, and the view switches there, regardless of
+which workspace was active when the window was opened.
+
 The **home workspace (the first one) is reserved**: it holds your ordinary, non-maximized
 windows and never receives a fullscreen window. Only the second workspace onward is used as a
 fullscreen target.
@@ -49,7 +52,8 @@ dbus-run-session -- gnome-shell --nested --wayland
 | Force fullscreen | on | Hide the top bar once the window is on its own workspace. Off leaves it merely maximized. |
 | Return home on minimize | on | Minimizing moves the window back to the home workspace. |
 | Return home on un-maximize | on | Un-maximizing or leaving fullscreen moves the window back. |
-| Home workspace | 0 | The reserved workspace, **counted from zero**. Never receives a fullscreen window. |
+| Move new windows home | on | Newly opened windows move to the home workspace and the view follows. |
+| Home workspace | 0 | The reserved workspace, **counted from zero**. Never receives a fullscreen window; new windows land here too. |
 | Startup delay | 3000 ms | Grace period after login before any window is moved, so a restored session is not reshuffled. |
 
 ## Behavior notes
@@ -68,6 +72,17 @@ dbus-run-session -- gnome-shell --nested --wayland
 - **Disabling the extension leaves your windows alone.** Managed windows are not repatriated or
   un-fullscreened on disable — yanking windows around during a shell restart or screen lock is
   worse than leaving them where they are.
+- **A window born maximized.** Some apps remember and restore a maximized or fullscreen state
+  on launch, arriving that way with no live maximize transition to react to. Such a window is
+  moved to its own fullscreen workspace immediately, the same as maximizing it live, rather
+  than being redirected to the home workspace like an ordinary new window. "Its own workspace"
+  means alone and off the home workspace — a workspace it would otherwise share with another
+  window (e.g. a second app opening fullscreen on whatever workspace happened to be active) is
+  not treated as already its own, and it is moved on to a fresh one instead.
+- **New windows redirect even from the overview.** Unlike the live-maximize path, the
+  new-window-home redirect does not skip while the Activities overview is open — a window that
+  didn't exist a moment ago can't be something the user is mid-drag with inside the overview,
+  so there's nothing for the guard to protect.
 
 ## Development
 
@@ -102,6 +117,21 @@ Run these inside a nested shell, watching the log with
 7. Open a modal dialog from a fullscreen app → the dialog is left alone.
 8. `gnome-extensions disable` then `enable` → no errors and no leaked-timeout warnings in the
    log.
+9. With a window open on workspace 1, switch to workspace 3 and open a new application → the
+   new window opens on workspace 1, and the view switches to workspace 1 as soon as the window
+   is ready.
+10. Open a new application while already on workspace 1 → the window opens on workspace 1 with
+    no visible workspace switch.
+11. Open an application that remembers being maximized and reopens in that state → it moves
+    straight to its own fullscreen workspace, exactly like maximizing a window live.
+12. Disable "Move new windows home" in preferences, then open a new application from a
+    different workspace → the window opens wherever it would have without the extension, and
+    the view does not switch.
+13. With one app already fullscreen on its own workspace, open a second application that
+    remembers being maximized → the new app gets a fresh fullscreen workspace of its own; the
+    two never end up sharing one.
+14. Open a new application straight from the Activities overview (click its icon in the dash)
+    → it still redirects to workspace 1, the same as launching it any other way.
 
 ## Architecture
 

@@ -5,6 +5,7 @@ import {
     isWindowFullyMaximized,
     isWindowOnManagedMonitor,
     countManageableWindowsOnWorkspace,
+    shouldMoveNewWindowHome,
 } from '../maximize-to-workspace@nchaddy.github.io/lib/windowFilter.js';
 
 import {
@@ -117,6 +118,41 @@ test('countManageableWindowsOnWorkspace with a null monitor counts every monitor
 
 test('countManageableWindowsOnWorkspace returns zero for an empty workspace', () => {
     assertEqual(countManageableWindowsOnWorkspace(fakeWorkspace([]), 0), 0, 'empty workspace');
+});
+
+test('shouldMoveNewWindowHome accepts a manageable window away from the home workspace', () => {
+    const settings = fakeSettings({'workspaces-only-on-primary': false});
+    const window = fakeWindow({get_workspace: () => fakeWorkspace([], 3)});
+
+    assertTrue(shouldMoveNewWindowHome(window, settings, 0), 'window away from home');
+});
+
+test('shouldMoveNewWindowHome rejects a window isManageableWindow would reject', () => {
+    const settings = fakeSettings({'workspaces-only-on-primary': false});
+    const dialog = fakeWindow({
+        window_type: Meta.WindowType.DIALOG,
+        get_workspace: () => fakeWorkspace([], 3),
+    });
+
+    assertFalse(shouldMoveNewWindowHome(dialog, settings, 0), 'dialog away from home');
+});
+
+test('shouldMoveNewWindowHome rejects a window on a non-managed monitor', () => {
+    const settings = fakeSettings({'workspaces-only-on-primary': true});
+    const window = fakeWindow({
+        get_monitor: () => 1,
+        get_display: () => ({get_primary_monitor: () => 0}),
+        get_workspace: () => fakeWorkspace([], 3),
+    });
+
+    assertFalse(shouldMoveNewWindowHome(window, settings, 0), 'window on secondary monitor');
+});
+
+test('shouldMoveNewWindowHome rejects a window already on the home workspace', () => {
+    const settings = fakeSettings({'workspaces-only-on-primary': false});
+    const window = fakeWindow({get_workspace: () => fakeWorkspace([], 0)});
+
+    assertFalse(shouldMoveNewWindowHome(window, settings, 0), 'window already home');
 });
 
 reportAndExit();

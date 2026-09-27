@@ -53,3 +53,16 @@ export function countManageableWindowsOnWorkspace(workspace, monitorIndex) {
         .filter(window => isManageableWindow(window) && isOnRequestedMonitor(window))
         .length;
 }
+
+/**
+ * Whether a just-mapped window should be redirected to the home workspace instead of being
+ * left wherever it opened.
+ */
+export function shouldMoveNewWindowHome(window, mutterSettings, homeWorkspaceIndex) {
+    if (!isManageableWindow(window))
+        return false;
+    if (!isWindowOnManagedMonitor(window, mutterSettings))
+        return false;
+
+    return window.get_workspace()?.index() !== homeWorkspaceIndex;
+}

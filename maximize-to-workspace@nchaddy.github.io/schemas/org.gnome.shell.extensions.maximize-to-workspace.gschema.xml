@@ -9,7 +9,17 @@
       <summary>Home workspace index</summary>
       <description>
         The reserved workspace, counted from zero. It never receives a fullscreen window,
-        and windows return here when they are minimized or un-maximized.
+        and windows return here when they are minimized or un-maximized. Newly opened windows
+        land here too.
+      </description>
+    </key>
+
+    <key name="move-new-windows-home" type="b">
+      <default>true</default>
+      <summary>Move new windows home</summary>
+      <description>
+        Move a newly opened window to the home workspace and switch the view there, regardless
+        of which workspace was active when it opened.
       </description>
     </key>
 
